@@ -1796,6 +1796,19 @@ function closeWindow(win) {
   } catch (err) {// pass
   }
 }
+function getFrameForWindow(win) {
+  if (isSameDomain(win)) {
+    return assertSameDomain(win).frameElement;
+  }
+
+  for (var _i21 = 0, _document$querySelect2 = document.querySelectorAll('iframe'); _i21 < _document$querySelect2.length; _i21++) {
+    var frame = _document$querySelect2[_i21];
+
+    if (frame && frame.contentWindow && frame.contentWindow === win) {
+      return frame;
+    }
+  }
+}
 // CONCATENATED MODULE: ./node_modules/cross-domain-utils/src/types.js
 // export something to force webpack to see this as an ES module
 var TYPES = true;
@@ -2229,6 +2242,10 @@ function memoize(method, options) {
   };
 
   return setFunctionName(memoizedFunction, getFunctionName(method) + "::memoized");
+}
+function promiseIdentity(item) {
+  // $FlowFixMe
+  return promise_ZalgoPromise.resolve(item);
 } // eslint-disable-next-line flowtype/no-weak-types
 
 function memoizePromise(method) {
@@ -4200,14 +4217,15 @@ function experiment(_ref) {
         return this;
       }
 
-      if (isEventUnique(name + "_" + treatment)) {
+      if (isEventUnique(name + "_" + treatment + "_" + JSON.stringify(payload))) {
         logTreatment({
           name: name,
-          treatment: treatment
+          treatment: treatment,
+          payload: payload
         });
       }
 
-      if (isEventUnique(name + "_" + treatment + "_" + checkpoint)) {
+      if (isEventUnique(name + "_" + treatment + "_" + checkpoint + "_" + JSON.stringify(payload))) {
         logCheckpoint({
           name: name,
           treatment: treatment,
@@ -4453,7 +4471,7 @@ function wrapPromise(method, _temp) {
   var expected = [];
   var promises = [];
   var timer = setTimeout(function () {
-    if (expected) {
+    if (expected.length) {
       promises.push(promise_ZalgoPromise.asyncReject(new Error("Expected " + expected[0] + " to be called")));
     }
   }, timeout);
@@ -4704,7 +4722,7 @@ function Logger(_ref) {
   }
 
   function immediateFlush() {
-    if (!dom_isBrowser() || window.location.protocol === constants_PROTOCOL.FILE || !events.length && !tracking.length) {
+    if (!dom_isBrowser() || !isElectron() && window.location.protocol === constants_PROTOCOL.FILE || !events.length && !tracking.length) {
       if (true) {
         return;
       } else {}
